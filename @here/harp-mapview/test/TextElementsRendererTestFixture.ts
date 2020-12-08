@@ -14,6 +14,7 @@ import * as THREE from "three";
 import { PoiRenderer } from "../lib/poi/PoiRenderer";
 import { ScreenCollisions } from "../lib/ScreenCollisions";
 import { ScreenProjector } from "../lib/ScreenProjector";
+import { DEFAULT_FONT_CATALOG_NAME, FontCatalogLoader } from "../lib/text/FontCatalogLoader";
 import { TextElement } from "../lib/text/TextElement";
 import { TextElementsRenderer } from "../lib/text/TextElementsRenderer";
 import { TextElementsRendererOptions } from "../lib/text/TextElementsRendererOptions";
@@ -30,7 +31,6 @@ import {
     stubElevationProvider
 } from "./stubElevationProvider";
 import { stubFontCatalog } from "./stubFontCatalog";
-import { stubFontCatalogLoader } from "./stubFontCatalogLoader";
 import { stubPoiManager } from "./stubPoiManager";
 import { stubPoiRenderer } from "./stubPoiRenderer";
 import { stubTextCanvas, stubTextCanvasFactory } from "./stubTextCanvas";
@@ -132,10 +132,8 @@ export class TestFixture {
 
     /**
      * Sets up required before every test case.
-     * @returns A promise that resolves to true once the setup is finished, to false if there was an
-     * error.
      */
-    setUp(): Promise<boolean> {
+    async setUp(): Promise<void> {
         this.m_defaultTile = this.m_dataSource.getTile(new TileKey(0, 0, TILE_LEVEL));
         this.m_defaultTile.textElementsChanged = true;
         this.m_allTiles = [];
@@ -162,6 +160,7 @@ export class TestFixture {
             DEF_TEXT_HEIGHT
         );
         const dummyUpdateCall = () => {};
+        const loadCatalogStub = this.sandbox.stub(FontCatalogLoader, "loadCatalog").resolves();
         this.m_textRenderer = new TextElementsRenderer(
             this.m_viewState,
             this.m_camera,
@@ -171,15 +170,11 @@ export class TestFixture {
             stubTextCanvasFactory(this.sandbox, this.m_textCanvasStub),
             stubPoiManager(this.sandbox),
             (this.m_poiRendererStub as unknown) as PoiRenderer,
-            stubFontCatalogLoader(this.sandbox, fontCatalog),
             new TextStyleCache(this.m_theme.textStyles),
             this.m_options
         );
-        // Force renderer initialization by calling render with changed text elements.
-        const time = 0;
-        this.m_textRenderer.placeText(this.tileLists, time);
-        this.clearVisibleTiles();
-        return this.m_textRenderer.waitInitialized();
+        loadCatalogStub.yieldOn("onSuccess", DEFAULT_FONT_CATALOG_NAME, fontCatalog);
+        return this.m_textRenderer.waitLoaded();
     }
 
     /**

@@ -72,7 +72,6 @@ import { PolarTileDataSource } from "./PolarTileDataSource";
 import { ScreenCollisions, ScreenCollisionsDebug } from "./ScreenCollisions";
 import { ScreenProjector } from "./ScreenProjector";
 import { FrameStats, PerformanceStatistics } from "./Statistics";
-import { FontCatalogLoader } from "./text/FontCatalogLoader";
 import { MapViewState } from "./text/MapViewState";
 import { TextCanvasFactory } from "./text/TextCanvasFactory";
 import { TextElement } from "./text/TextElement";
@@ -1253,7 +1252,6 @@ export class MapView extends EventDispatcher {
 
         this.m_enableMixedLod = enableMixedLod;
         this.m_visibleTiles = this.createVisibleTileSet();
-        //FIXME: Why is this needed: this.resetTextRenderer(theme);
         this.update();
     }
 
@@ -3531,7 +3529,6 @@ export class MapView extends EventDispatcher {
             this.m_visibleTiles.allVisibleTilesLoaded &&
             this.m_connectedDataSources.size + this.m_failedDataSources.size ===
                 this.m_tileDataSources.length &&
-            !this.m_textElementsRenderer.initializing &&
             !this.m_textElementsRenderer.loading
         ) {
             this.m_initialTextPlacementDone = true;
@@ -3883,11 +3880,7 @@ export class MapView extends EventDispatcher {
         tileObjectRenderer.setupRenderer();
     }
 
-    private createTextRenderer(
-        fontCatalogs?: FontCatalogConfig[],
-        textStyles?: TextStyleDefinition[],
-        defaultTextStyle?: TextStyleDefinition
-    ): TextElementsRenderer {
+    private createTextRenderer(): TextElementsRenderer {
         const updateCallback: ViewUpdateCallback = () => {
             this.update();
         };
@@ -3901,8 +3894,7 @@ export class MapView extends EventDispatcher {
             new TextCanvasFactory(this.m_renderer),
             this.m_poiManager,
             this.m_poiRenderer,
-            new FontCatalogLoader(fontCatalogs),
-            new TextStyleCache(textStyles, defaultTextStyle),
+            new TextStyleCache(),
             this.m_options
         );
     }
@@ -3918,18 +3910,9 @@ export class MapView extends EventDispatcher {
         textStyles?: TextStyleDefinition[],
         defaultTextStyle?: TextStyleDefinition
     ): Promise<void> {
-        const overlayText = this.m_textElementsRenderer.overlayText;
-        this.m_poiRenderer.reset();
-        this.m_textElementsRenderer = this.createTextRenderer(
-            fontCatalogs,
-            textStyles,
-            defaultTextStyle
-        );
-        if (overlayText !== undefined) {
-            this.m_textElementsRenderer.addOverlayText(overlayText);
-        }
-        await this.m_textElementsRenderer.waitInitialized();
-        await this.m_textElementsRenderer.waitLoaded();
+        await this.m_textElementsRenderer.updateFontCatalogs(fontCatalogs);
+        await this.m_textElementsRenderer.updateTextStyles(textStyles, defaultTextStyle);
+        this.update();
     }
 
     /**

@@ -3,10 +3,7 @@
  * Licensed under Apache 2.0, see full license in LICENSE
  * SPDX-License-Identifier: Apache-2.0
  */
-
-//    Mocha discourages using arrow functions, see https://mochajs.org/#arrow-functions
-
-import { assert, expect } from "chai";
+import { expect } from "chai";
 import * as sinon from "sinon";
 import * as THREE from "three";
 
@@ -48,6 +45,8 @@ import {
     InputTile,
     not
 } from "./TextElementsRendererTestUtils";
+
+//    Mocha discourages using arrow functions, see https://mochajs.org/#arrow-functions
 
 /**
  * Definition of a test case for TextElementsRenderer, including input data (tiles, text elements,
@@ -735,8 +734,7 @@ describe("TextElementsRenderer", function() {
         }
 
         fixture = new TestFixture(sandbox);
-        const setupDone = await fixture.setUp();
-        assert(setupDone, "Setup failed.");
+        await fixture.setUp();
     });
 
     afterEach(function() {
